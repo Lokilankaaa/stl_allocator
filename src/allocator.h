@@ -7,7 +7,9 @@
 
 #include "Memorypool.h"
 
-class allocator {
+template<class T>
+class my_allocator {
+private:
 
 };
 
