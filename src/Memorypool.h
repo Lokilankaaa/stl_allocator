@@ -1,82 +1,44 @@
 //
-// Created by 薛伟 on 2020/6/11.
+// Created by xw on 2020/6/11.
 //
 
 #ifndef STL_ALLOCATOR_MEMORYPOOL_H
 #define STL_ALLOCATOR_MEMORYPOOL_H
 
-#define POOL_SIZE 4096 //one pool contains 4096 T variables
+#include <cstdlib>
 
-template<class T>
-struct one_block {
-    T *p = new T;
-    one_block *pre;
-    one_block *next;
+#define MAX_SIZE 65536 //The max size of block in free list
+#define ALIGN_SIZE 32 //The incremental size of blocks
+static const int NUM_OF_FREELISTS = MAX_SIZE / ALIGN_SIZE; //The size of free list
+
+union my_obj {
+    union my_obj *free_list_link;
+    char data[1];
 };
 
-template<class T>
-class Memorypool {
+class memory_pool {
 private:
-    one_block<T> *freelist;
-    one_block<T> *occupied_list;
-    int occupied_num;
-    int total_size;
+    static my_obj *volatile free_lists[NUM_OF_FREELISTS];
+
+    static char *start_pool;
+
+    static char *end_pool;
+
+    static std::size_t heap_size;
+
+    static std::size_t get_freelists_index(std::size_t bytes);
+
+    static std::size_t align_bytes(std::size_t bytes);
+
+    static char *chunk_allocate(std::size_t obj_size, unsigned long &obj_num);
+
+    static void *refill(std::size_t size);
 
 public:
-    explicit Memorypool(int size = POOL_SIZE);
+    static void *allocate(std::size_t N);
 
-    ~Memorypool();
-
-    int get_total_size() const;
-
-    int get_occupied_size() const;
-
-    one_block<T> get_freelist() const;
-
-//    one_block<T> get
+    static void deallocate(void *p, std::size_t size);
 };
-
-template<class T>
-Memorypool<T>::Memorypool(int size) {
-    total_size = size;
-    occupied_num = 0;
-    occupied_list = nullptr;
-    freelist = new one_block<T>;
-    freelist->pre = nullptr;
-    auto cur = freelist;
-    for (int i = 0; i < total_size - 1; ++i) {
-        auto tmp = new one_block<T>;
-        tmp->next = nullptr;
-        tmp->pre = cur;
-        cur->next = tmp;
-        cur = cur->next;
-    }
-}
-
-template<class T>
-Memorypool<T>::~Memorypool() {
-    auto cur = freelist;
-    for (int i = 0; i < total_size - 1; ++i) {
-        auto t = cur;
-        cur = cur->next;
-        delete t;
-    }
-}
-
-template<class T>
-int Memorypool<T>::get_total_size() const {
-    return total_size;
-}
-
-template<class T>
-int Memorypool<T>::get_occupied_size() const {
-    return occupied_num;
-}
-
-template<class T>
-one_block<T> Memorypool<T>::get_freelist() const {
-    return freelist;
-}
 
 
 #endif //STL_ALLOCATOR_MEMORYPOOL_H

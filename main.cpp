@@ -2,11 +2,10 @@
 #include <vector>
 #include "./src/allocator.h"
 
-using namespace std;
 
 int main() {
 
-//    vector<int, my_allocator<int> > aa;
-    std::cout << "Hello, World!" << std::endl;
+    std::vector<int, my_allocator::allocator<int> > test(10000);
+    std::cout << test[500];
     return 0;
 }
