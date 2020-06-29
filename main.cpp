@@ -3,7 +3,7 @@
 #include "./src/allocator.h"
 #include <random>
 #include <chrono>
-#pragma GCC optimize(3, "Ofast", "inline")
+#pragma G++ optimize(2)
 
 using Point2D = std::pair<int, int>;
 
@@ -21,10 +21,12 @@ public:
     void run();
 };
 
+unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 template<template<class> class allocator>
 void test<allocator>::run() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
+
+//    std::random_device rd;
+    std::mt19937 gen(seed);
     std::uniform_int_distribution<> dis(1, TestSize);
 
     // vector creation
@@ -72,7 +74,6 @@ void test<allocator>::run() {
 
 int main() {
     test<my_allocator::allocator> test1;
-//    test<DefaultAllocator> test2;
     test<std::allocator> test3;
     auto start = std::chrono::system_clock::now();
     test1.run();
