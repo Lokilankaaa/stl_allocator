@@ -64,7 +64,7 @@ void *memory_pool::refill(std::size_t size) {
     for (int i = 1;; ++i) {
         cur_block = next_block;
         next_block = (my_obj *) ((char *) next_block + size);
-        if (obj_num == i - 1) {
+        if (obj_num - 1 == i) {
             cur_block->free_list_link = nullptr;
             break;
         } else {
@@ -92,8 +92,8 @@ void memory_pool::deallocate(void *p, std::size_t size) {
         free(p);
     } else {
         auto my_free_list = free_lists + get_freelists_index(align_bytes(size));
-        ((my_obj *)p)->free_list_link = *my_free_list;
-        *my_free_list = (my_obj *)p;
+        ((my_obj *) p)->free_list_link = *my_free_list;
+        *my_free_list = (my_obj *) p;
     }
 }
 

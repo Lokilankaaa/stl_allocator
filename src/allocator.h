@@ -34,19 +34,19 @@ namespace my_allocator {
 
         const_pointer address(const_reference _Val) const _NOEXCEPT { return &_Val; }
 
-        void deallocate(pointer _Ptr, size_type _Count){
+        void deallocate(pointer _Ptr, size_type _Count) {
             memory_pool::deallocate(_Ptr, _Count);
         }
 
 //    _DECLSPEC_ALLOCATOR
-        pointer allocate(size_type _Count){
+        pointer allocate(size_type _Count) {
             auto total_size = _Count * sizeof(value_type);
             if (total_size > MAX_SIZE)
-                return (pointer)malloc(total_size);
+                return (pointer) malloc(total_size);
             else {
                 auto res = memory_pool::allocate(total_size);
-                if(res)
-                    return (pointer)res;
+                if (res)
+                    return (pointer) res;
                 else
                     throw std::bad_alloc();
             }
@@ -58,7 +58,7 @@ namespace my_allocator {
         }
 
         template<class _Objty, class... _Types>
-        void construct(_Objty *_Ptr, _Types &&... _Args){
+        void construct(_Objty *_Ptr, _Types &&... _Args) {
             new(_Ptr) _Objty(std::forward<_Types>(_Args)...);
         }
 
