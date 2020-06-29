@@ -3,6 +3,7 @@
 #include "./src/allocator.h"
 #include <random>
 #include <chrono>
+#pragma GCC optimize(3, "Ofast", "inline")
 
 using Point2D = std::pair<int, int>;
 
