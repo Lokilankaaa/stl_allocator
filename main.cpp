@@ -3,7 +3,6 @@
 #include "./src/allocator.h"
 #include <random>
 #include <chrono>
-#pragma G++ optimize(2)
 
 using Point2D = std::pair<int, int>;
 
@@ -21,7 +20,7 @@ public:
     void run();
 };
 
-unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+static auto seed = std::chrono::system_clock::now().time_since_epoch().count();
 template<template<class> class allocator>
 void test<allocator>::run() {
 
