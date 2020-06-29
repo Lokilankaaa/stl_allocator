@@ -95,4 +95,3 @@ void memory_pool::deallocate(void *p, std::size_t size) {
         *my_free_list = (my_obj *) p;
     }
 }
-

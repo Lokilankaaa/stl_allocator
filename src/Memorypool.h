@@ -7,7 +7,7 @@
 
 #include <cstdlib>
 
-#define MAX_SIZE 65536 //The max size of block in free list
+#define MAX_SIZE 65536 //The max size of block in free lists
 #define ALIGN_SIZE 32 //The incremental size of blocks
 static const int NUM_OF_FREELISTS = MAX_SIZE / ALIGN_SIZE; //The size of free list
 
