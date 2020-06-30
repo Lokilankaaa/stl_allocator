@@ -111,14 +111,15 @@ protected:
 template<template<class> class allocator>
 class test {
 public:
-    void run_test() {
+    void run_test(const std::string &name) {
         vecWrapper **testVec;
         testVec = new vecWrapper *[TESTSIZE];
         srand(time(NULL));
         int tIndex, tSize;
 
         // test allocator
-        std::cout << "test allocator" << std::endl;
+        std::cout << "test " + name << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
         auto start = std::chrono::system_clock::now();
         for (int i = 0; i < TESTSIZE - 4; i++) {
             tSize = (int) ((float) rand() / (float) RAND_MAX * 10000);
@@ -137,12 +138,14 @@ public:
         auto end = std::chrono::system_clock::now();
         auto duration =
                 std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        std::cout << "memory pool allocator cost " << duration.count() << " ms"
+        std::cout << name + " cost " << duration.count() << " ms"
                   << std::endl;
+        std::cout << "--------------------------------------------" << std::endl << std::endl;
 
 
         // test resize
-        std::cout << "test resize" << std::endl;
+        std::cout << "test resize using " + name << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
         start = std::chrono::system_clock::now();
         for (int i = 0; i < TESTSIZE; i++) {
             tIndex = (int) ((float) rand() / (float) RAND_MAX * (float) TESTSIZE);
@@ -152,12 +155,13 @@ public:
         end = std::chrono::system_clock::now();
         duration =
                 std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        std::cout << "memory pool resize cost " << duration.count() << " ms"
+        std::cout << name + " resize cost " << duration.count() << " ms"
                   << std::endl;
-
+        std::cout << "--------------------------------------------" << std::endl << std::endl;
 
         // test assignment
-        std::cout << "test assignment" << std::endl;
+        std::cout << "test assignment using " + name << std::endl;
+        std::cout << "--------------------------------------------" << std::endl;
         tIndex = (int) ((float) rand() / (float) RAND_MAX * (TESTSIZE - 4 - 1));
         int tIntValue = 10;
         testVec[tIndex]->setElement(testVec[tIndex]->size() / 2, &tIntValue);
@@ -184,6 +188,8 @@ public:
         else
             std::cout << "result OK for obj (13,20)" << std::endl;
 
+        std::cout << "--------------------------------------------" << std::endl << std::endl;
+
         for (int i = 0; i < TESTSIZE; i++)
             delete testVec[i];
 
@@ -196,8 +202,8 @@ int main() {
     test<my_allocator::allocator> test_my_allocator;
     test<std::allocator> test_std_allocator;
 
-    test_my_allocator.run_test();
-    test_std_allocator.run_test();
+    test_my_allocator.run_test("my allocator");
+    test_std_allocator.run_test("std allocator");
 
     return 0;
 }
