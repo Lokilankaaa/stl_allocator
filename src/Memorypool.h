@@ -26,17 +26,23 @@ private:
 
     static std::size_t heap_size;
 
+    //to get the index of a free list to be allocate
     static std::size_t get_freelists_index(std::size_t bytes);
 
+    //to align the bytes to the multiples of align_byte
     static std::size_t align_bytes(std::size_t bytes);
 
+    //to get memory from memory pool with size (obj_size * obj_num)
     static char *chunk_allocate(std::size_t obj_size, unsigned long &obj_num);
 
+    //to refill the memory pool
     static void *refill(std::size_t size);
 
 public:
+    //allocate memory to the client from memory pool
     static void *allocate(std::size_t N);
 
+    //return memory to memory pool or system
     static void deallocate(void *p, std::size_t size);
 };
 

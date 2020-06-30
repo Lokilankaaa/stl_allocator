@@ -1,93 +1,203 @@
-#include <iostream>
-#include <vector>
 #include "./src/allocator.h"
-#include <random>
 #include <chrono>
+#include <ctime>
+#include <iostream>
+#include <random>
+#include <vector>
 
-using Point2D = std::pair<int, int>;
+#define INT 1
+#define FLOAT 2
+#define DOUBLE 3
+#define CLASS 4
 
-//Obj *volatile second_allocator::mem_pool[COUNT_FREE_LISTS] = {nullptr};
-//char *second_allocator::start_mem_pool = nullptr;
-//char *second_allocator::end_mem_pool = nullptr;
-//size_t second_allocator::heap_size = 0;
+#define TESTSIZE 10000
+
+class vecWrapper {
+public:
+    vecWrapper() {
+        m_pVec = NULL;
+        m_type = INT;
+    }
+
+    virtual ~vecWrapper() {}
+
+public:
+    void setPointer(int type, void *pVec) {
+        m_type = type;
+        m_pVec = pVec;
+    }
+
+    virtual void visit(int index) = 0;
+
+    virtual int size() = 0;
+
+    virtual void resize(int size) = 0;
+
+    virtual bool checkElement(int index, void *value) = 0;
+
+    virtual void setElement(int idex, void *value) = 0;
+
+protected:
+    int m_type;
+    void *m_pVec;
+};
+
+template<class T, template<class> class allocator>
+class vecWrapperT : public vecWrapper {
+public:
+    vecWrapperT(int type, std::vector<T, allocator<T>> *pVec) {
+        m_type = type;
+        m_pVec = pVec;
+    }
+
+    virtual ~vecWrapperT() {
+        if (m_pVec)
+            delete ((std::vector<T, allocator<T>> *) m_pVec);
+    }
+
+public:
+    virtual void visit(int index) {
+        T temp = (*(std::vector<T, allocator<T>> *) m_pVec)[index];
+    }
+
+    virtual int size() {
+        return ((std::vector<T, allocator<T>> *) m_pVec)->size();
+    }
+
+    virtual void resize(int size) {
+        ((std::vector<T, allocator<T>> *) m_pVec)->resize(size);
+    }
+
+    virtual bool checkElement(int index, void *pValue) {
+        T temp = (*(std::vector<T, allocator<T>> *) m_pVec)[index];
+        if (temp == (*((T *) pValue)))
+            return true;
+        else
+            return false;
+    }
+
+    virtual void setElement(int index, void *value) {
+        (*(std::vector<T, allocator<T>> *) m_pVec)[index] =
+                *((T *) value);
+    }
+};
+
+class myObject {
+public:
+    myObject() : m_X(0), m_Y(0) {}
+
+    myObject(int t1, int t2) : m_X(t1), m_Y(t2) {}
+
+    myObject(const myObject &rhs) {
+        m_X = rhs.m_X;
+        m_Y = rhs.m_Y;
+    }
+
+    ~myObject() { /*std::cout << "my object destructor called" << std::endl;*/
+    }
+
+    bool operator==(const myObject &rhs) {
+        if ((rhs.m_X == m_X) && (rhs.m_Y == m_Y))
+            return true;
+        else
+            return false;
+    }
+
+protected:
+    int m_X;
+    int m_Y;
+};
 
 template<template<class> class allocator>
 class test {
-private:
-    int TestSize = 10000;
-    int PickSize = 10000;
 public:
-    void run();
+    void run_test() {
+        vecWrapper **testVec;
+        testVec = new vecWrapper *[TESTSIZE];
+        srand(time(NULL));
+        int tIndex, tSize;
+
+        // test allocator
+        std::cout << "test allocator" << std::endl;
+        auto start = std::chrono::system_clock::now();
+        for (int i = 0; i < TESTSIZE - 4; i++) {
+            tSize = (int) ((float) rand() / (float) RAND_MAX * 10000);
+            auto pNewVec = new vecWrapperT<int, allocator>(
+                    INT, new std::vector<int, allocator<int> >(tSize));
+            testVec[i] = (vecWrapper *) pNewVec;
+        }
+
+        for (int i = 0; i < 4; i++) {
+            tSize = (int) ((float) rand() / (float) RAND_MAX * 10000);
+            auto pNewVec = new vecWrapperT<myObject, allocator>(
+                    CLASS, new std::vector<myObject, allocator<myObject>>(
+                            tSize));
+            testVec[TESTSIZE - 4 + i] = (vecWrapper *) pNewVec;
+        }
+        auto end = std::chrono::system_clock::now();
+        auto duration =
+                std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        std::cout << "memory pool allocator cost " << duration.count() << " ms"
+                  << std::endl;
+
+
+        // test resize
+        std::cout << "test resize" << std::endl;
+        start = std::chrono::system_clock::now();
+        for (int i = 0; i < TESTSIZE; i++) {
+            tIndex = (int) ((float) rand() / (float) RAND_MAX * (float) TESTSIZE);
+            tSize = (int) ((float) rand() / (float) RAND_MAX * (float) TESTSIZE);
+            testVec[tIndex]->resize(tSize);
+        }
+        end = std::chrono::system_clock::now();
+        duration =
+                std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        std::cout << "memory pool resize cost " << duration.count() << " ms"
+                  << std::endl;
+
+
+        // test assignment
+        std::cout << "test assignment" << std::endl;
+        tIndex = (int) ((float) rand() / (float) RAND_MAX * (TESTSIZE - 4 - 1));
+        int tIntValue = 10;
+        testVec[tIndex]->setElement(testVec[tIndex]->size() / 2, &tIntValue);
+        if (!testVec[tIndex]->checkElement(testVec[tIndex]->size() / 2, &tIntValue))
+            std::cout << "incorrect assignment in vector %d\n"
+                      << tIndex << std::endl;
+        else
+            std::cout << "result OK for int" << std::endl;
+
+        tIndex = TESTSIZE - 4 + 3;
+        myObject tObj(11, 15);
+        testVec[tIndex]->setElement(testVec[tIndex]->size() / 2, &tObj);
+        if (!testVec[tIndex]->checkElement(testVec[tIndex]->size() / 2, &tObj))
+            std::cout << "incorrect assignment in vector %d\n"
+                      << tIndex << std::endl;
+        else
+            std::cout << "result OK for obj (11,15)" << std::endl;
+
+        myObject tObj1(13, 20);
+        testVec[tIndex]->setElement(testVec[tIndex]->size() / 2, &tObj1);
+        if (!testVec[tIndex]->checkElement(testVec[tIndex]->size() / 2, &tObj1))
+            std::cout << "incorrect assignment in vector " << tIndex
+                      << " for object (13,20)" << std::endl;
+        else
+            std::cout << "result OK for obj (13,20)" << std::endl;
+
+        for (int i = 0; i < TESTSIZE; i++)
+            delete testVec[i];
+
+        delete[] testVec;
+    }
 };
 
-static auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-template<template<class> class allocator>
-void test<allocator>::run() {
-
-//    std::random_device rd;
-    std::mt19937 gen(seed);
-    std::uniform_int_distribution<> dis(1, TestSize);
-
-    // vector creation
-    using IntVec = std::vector<int, allocator<int>>;
-    std::vector<IntVec, allocator<IntVec>> vecints(TestSize);
-    for (int i = 0; i < TestSize; i++)
-        vecints[i].resize(dis(gen));
-
-    using PointVec = std::vector<Point2D, allocator<Point2D>>;
-    std::vector<PointVec, allocator<PointVec>> vecpts(TestSize);
-    for (int i = 0; i < TestSize; i++)
-        vecpts[i].resize(dis(gen));
-
-    // vector resize
-    for (int i = 0; i < PickSize; i++) {
-        int idx = dis(gen) - 1;
-        int size = dis(gen);
-        vecints[idx].resize(size);
-        vecpts[idx].resize(size);
-    }
-
-    // vector element assignment
-    {
-        int val = 10;
-        int idx1 = dis(gen) - 1;
-        int idx2 = vecints[idx1].size() / 2;
-        vecints[idx1][idx2] = val;
-        if (vecints[idx1][idx2] == val)
-            std::cout << "correct assignment in vecints: " << idx1 << std::endl;
-        else
-            std::cout << "incorrect assignment in vecints: " << idx1 << std::endl;
-    }
-    {
-        Point2D val(11, 15);
-        int idx1 = dis(gen) - 1;
-        int idx2 = vecpts[idx1].size() / 2;
-        vecpts[idx1][idx2] = val;
-        if (vecpts[idx1][idx2] == val)
-            std::cout << "correct assignment in vecpts: " << idx1 << std::endl;
-        else
-            std::cout << "incorrect assignment in vecpts: " << idx1 << std::endl;
-    }
-
-}
 
 int main() {
-    test<my_allocator::allocator> test1;
-    test<std::allocator> test3;
-    auto start = std::chrono::system_clock::now();
-    test1.run();
-    auto end = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "memory pool allocator cost " << duration.count() << " ms" << std::endl;
-//    start = std::chrono::system_clock::now();
-//    test2.run();
-//    end = std::chrono::system_clock::now();
-//    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-//    std::cout << "default allocator cost " << duration.count() << " ms" << std::endl;
-    start = std::chrono::system_clock::now();
-    test3.run();
-    end = std::chrono::system_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "std allocator cost " << duration.count() << " ms" << std::endl;
+    test<my_allocator::allocator> test_my_allocator;
+    test<std::allocator> test_std_allocator;
+
+    test_my_allocator.run_test();
+    test_std_allocator.run_test();
+
     return 0;
 }

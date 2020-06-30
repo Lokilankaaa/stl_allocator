@@ -8,6 +8,8 @@
 #include <cstddef>
 #include <type_traits>
 #include "Memorypool.h"
+#include <cstdlib>
+#include <new>
 
 namespace my_allocator {
     template<class T>
